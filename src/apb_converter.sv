@@ -11,13 +11,6 @@ module apb_converter
 );
 
 
-always_comb begin
-
-   apbs.PSLVERR   <= apbm.PSLVERR;
-
-end
-
-
 enum {ST_IDLE,  ST_SETUP, ST_ACCESS} state, next_state;
 
 always_ff @(posedge apbs.PCLK) begin
@@ -61,6 +54,10 @@ always_ff @(posedge apbs.PCLK) begin
 
       apbs.PREADY    <= 1'b0;
       apbs.PSLVERR   <= 1'b0;
+
+      apbm.PADDR     <= 'X;
+      apbm.PWDATA    <= 'X;
+      apbs.PRDATA    <= 'X;
    end else begin
 
       case (state)
@@ -68,14 +65,7 @@ always_ff @(posedge apbs.PCLK) begin
 
             if (apbs.PSEL) begin
                apbm.PSEL   <= 1'b1;
-               apbm.PADDR  <= apbs.PADDR;  
-
-               if (apbs.PWRITE) begin
-                  apbm.PWRITE <= 1'b1; 
-                  apbm.PWDATA <= apbs.PWDATA; 
-               end else begin
-                  apbm.PWRITE <= 1'b0; 
-               end
+               apbm.PWRITE <= apbs.PWRITE;
             end
               
          end // ST_IDLE
@@ -93,8 +83,12 @@ always_ff @(posedge apbs.PCLK) begin
 
       endcase // state      
 
+      apbm.PADDR     <= apbs.PADDR;
+      apbm.PWDATA    <= apbs.PWDATA;
       apbs.PREADY    <= apbm.PREADY;
       apbs.PRDATA    <= apbm.PRDATA;
+
+      apbs.PSLVERR   <= apbm.PSLVERR;
 
    end
 end 

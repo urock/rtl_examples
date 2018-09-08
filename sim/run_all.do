@@ -1,2 +1,2 @@
-do !recompile.do
-do !resim.do
+do recompile.do
+do resim.do

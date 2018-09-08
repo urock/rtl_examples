@@ -14,6 +14,10 @@ parameter APB_DATA_NBYTES_    =     (APB_DATA_WIDTH_/8);
 
 parameter NUM_BYTES           =     256; 
 
+typedef logic [APB_DATA_WIDTH_ - 1:0] m_data_t;
+typedef logic [APB_ADDR_WIDTH_ - 1:0] m_addr_t;
+
+
 // declare interfaces
 apb_if  #(
       .APB_ADDR_WIDTH (APB_ADDR_WIDTH_),
@@ -60,41 +64,66 @@ apb_converter # (
 
 
 
-// driver
+function automatic m_data_t get_data_with_apb_width(input int byte_addr, const ref logic [7:0] data_array[NUM_BYTES]);
+   m_data_t data_word;
 
+   for (int i = 0; i < APB_DATA_NBYTES_; i++) begin
+      data_word[APB_DATA_WIDTH_ - 8*i -: 8] = data_array[byte_addr + i];
+   end
+
+   return data_word;
+endfunction : get_data_with_apb_width
+
+
+// master device 
 initial begin
 
+   logic error;
    int p; 
-   logic [APB_DATA_WIDTH_ - 1:0]  data_wr;
-   logic [APB_DATA_WIDTH_ - 1:0]  data_rd;
-   logic [APB_ADDR_WIDTH_ - 1:0]  addr;
+   m_data_t  data_wr;
+   m_data_t  data_rd;
+   m_addr_t  addr;
+   logic [7:0] test_data [NUM_BYTES]; 
 
    apb_in.clearAll();
    apb_out.clearAll();
+
+   //create randow test data array
+   for (p = 0; p < NUM_BYTES; p++)
+      test_data[p] = $urandom_range(255,0);
+
    
    @(reset_done_trigger);
    $display("Reset Done");
+   error = 0;
 
    @(posedge PCLK);
 
-   addr = 4; 
-   data_wr = 32'h12345678;
+   for (addr = 0; addr < NUM_BYTES; addr += APB_DATA_NBYTES_) begin
 
-   apb_in.masterWriteWord(addr, data_wr);
+      data_wr = get_data_with_apb_width(addr, test_data);
 
-   @(posedge PCLK);
-   @(posedge PCLK);
+      apb_in.masterWriteWord(addr, data_wr);
 
+      apb_in.masterReadWord(addr, data_rd);
 
-   apb_in.masterReadWord(addr, data_rd);
-
-
-   if (data_rd != data_wr) begin
-      $error("addr -> %04x, data_wr -> %x, data_rd -> %x", addr, data_wr, data_rd);
+      if (data_rd != data_wr) begin
+         $error("addr -> %04x ERROR: data_wr -> %x, data_rd -> %x", addr, data_wr, data_rd);
+         error = 1; 
+      end else begin
+         $display("addr -> %04x OK", addr);
+      end
    end
 
+   $display("====================================");
+   if (error) begin
+      $display("Test FAILED");
+   end else begin
+      $display("Test OK");
+   end 
+   $display("====================================");
 
-   for (p=0; p<25; p++)
+   for (p=0; p<5; p++)
       @(negedge PCLK);
 
    $finish;
@@ -104,8 +133,8 @@ end
 
 // slave memory model
 initial begin
-   logic [APB_ADDR_WIDTH_ - 1:0]  addr;
-   logic [APB_DATA_WIDTH_ - 1:0]  data;
+   m_addr_t  addr;
+   m_data_t  data;
    logic RNW; 
 
    logic [7:0] mem [NUM_BYTES]; 
@@ -120,16 +149,11 @@ initial begin
          // $display("Monitor recieved WRITE: addr -> %d, data -> %d", addr, data);
 
          for (i = 0; i < APB_DATA_NBYTES_; i++) begin
-            mem[addr * APB_DATA_NBYTES_ + i] =  data[APB_DATA_WIDTH_ - 8*i -: 8]; 
-            // $display("APB_DATA_WIDTH_ - 8*%d -> ", i, APB_DATA_WIDTH_ - 8*i); 
+            mem[addr + i] =  data[APB_DATA_WIDTH_ - 8*i -: 8];  
          end 
 
       end else begin
-         // $display("Monitor recieved READ: addr -> %d", addr);
-         for (i = 0; i < APB_DATA_NBYTES_; i++) begin
-            data[APB_DATA_WIDTH_ - 8*i -: 8] = mem[addr * APB_DATA_NBYTES_ + i];
-            // $display("APB_DATA_WIDTH_ - 8*%d -> ", i, APB_DATA_WIDTH_ - 8*i); 
-         end         
+         data = get_data_with_apb_width(addr, mem);       
          apb_out.slaveSendAnswer(data);
       end
 

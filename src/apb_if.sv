@@ -76,8 +76,11 @@ interface apb_if
       while(~PREADY) begin
          @(posedge PCLK);
       end
-      $display("WRITE: addr -> %04x, data -> %x", addr, data);
+      // $display("WRITE: addr -> %04x, data -> %x", addr, data);
       masterClear();
+      if ($urandom_range(1,0)) begin
+         @(posedge PCLK);
+      end
    endtask : masterWriteWord
 
 
@@ -124,24 +127,15 @@ interface apb_if
          @(posedge PCLK);
       end
       data = PRDATA; 
-      $display(" READ: addr -> %04x, data -> %x", addr, data);
+      // $display(" READ: addr -> %04x, data -> %x", addr, data);
       masterClear();
+      if ($urandom_range(1,0)) begin
+         @(posedge PCLK);
+      end
 
    endtask : masterReadWord
 
 
-   // task slaveReceiveReadRequest(output bit [APB_ADDR_WIDTH - 1:0] addr);
-
-   //    while(1) begin
-   //       if (PSEL & ~PWRITE) begin
-   //          addr = PADDR;
-   //          return;
-   //       end else begin
-   //          @(posedge PCLK);
-   //       end
-   //    end
-
-   // endtask : slaveReceiveReadRequest
 
    task slaveSendAnswer(input bit [APB_DATA_WIDTH - 1:0] data); 
       PREADY = 1;
