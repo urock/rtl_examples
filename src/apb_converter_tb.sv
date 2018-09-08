@@ -72,13 +72,15 @@ function automatic m_data_t get_data_with_apb_width(input int byte_addr, const r
    end
 
    return data_word;
-endfunction : get_data_with_apb_width
+endfunction 
+
 
 
 // master device 
 initial begin
 
-   logic error;
+   logic data_error;
+   logic bus_error; 
    int p; 
    m_data_t  data_wr;
    m_data_t  data_rd;
@@ -95,28 +97,37 @@ initial begin
    
    @(reset_done_trigger);
    $display("Reset Done");
-   error = 0;
+   data_error = 0;
+
 
    @(posedge PCLK);
 
-   for (addr = 0; addr < NUM_BYTES; addr += APB_DATA_NBYTES_) begin
+   for (addr = 0; addr < (NUM_BYTES - APB_DATA_NBYTES_ + 1); addr++) begin      
 
       data_wr = get_data_with_apb_width(addr, test_data);
 
-      apb_in.masterWriteWord(addr, data_wr);
+      apb_in.masterWriteWord(addr, data_wr, bus_error);
+      if (bus_error) begin
+         $display("addr -> %04x BUS WRITE Error", addr);
+         continue;
+      end
 
-      apb_in.masterReadWord(addr, data_rd);
+      apb_in.masterReadWord(addr, data_rd, bus_error);
+      if (bus_error) begin
+         $display("addr -> %04x BUS READ Error", addr);
+         continue;
+      end      
 
       if (data_rd != data_wr) begin
          $error("addr -> %04x ERROR: data_wr -> %x, data_rd -> %x", addr, data_wr, data_rd);
-         error = 1; 
+         data_error = 1; 
       end else begin
          $display("addr -> %04x OK", addr);
       end
    end
 
    $display("====================================");
-   if (error) begin
+   if (data_error) begin
       $display("Test FAILED");
    end else begin
       $display("Test OK");

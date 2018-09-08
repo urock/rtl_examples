@@ -10,6 +10,10 @@ module apb_converter
    apb_if.master_mp                 apbm
 );
 
+function int addr_lsb_n(int data_width);
+   return $clog2(data_width/8);
+endfunction 
+
 
 enum {ST_IDLE,  ST_SETUP, ST_ACCESS} state, next_state;
 
@@ -46,6 +50,7 @@ always_comb begin
    endcase // state
 end
 
+logic addr_not_alligned; 
 // outputs
 always_ff @(posedge apbs.PCLK) begin
    if (~apbs.PRESETn) begin
@@ -58,7 +63,11 @@ always_ff @(posedge apbs.PCLK) begin
       apbm.PADDR     <= 'X;
       apbm.PWDATA    <= 'X;
       apbs.PRDATA    <= 'X;
+
+      addr_not_alligned <= 1'b0;
    end else begin
+
+      apbs.PSLVERR   <= 1'b0; 
 
       case (state)
          ST_IDLE: begin
@@ -72,12 +81,17 @@ always_ff @(posedge apbs.PCLK) begin
 
          ST_SETUP: begin
             apbm.PENABLE <= 1'b1; 
+            for (int i = 0; i < addr_lsb_n(DATAM_WIDTH); i++) 
+               if (apbs.PADDR[i])
+                  addr_not_alligned <= 1'b1;
          end 
 
          ST_ACCESS: begin
             if (apbm.PREADY) begin
                apbm.PSEL      <= 1'b0;
                apbm.PENABLE   <= 1'b0;
+               apbs.PSLVERR   <= apbm.PSLVERR | addr_not_alligned; 
+               addr_not_alligned <= 1'b0; 
             end
          end 
 
@@ -87,8 +101,6 @@ always_ff @(posedge apbs.PCLK) begin
       apbm.PWDATA    <= apbs.PWDATA;
       apbs.PREADY    <= apbm.PREADY;
       apbs.PRDATA    <= apbm.PRDATA;
-
-      apbs.PSLVERR   <= apbm.PSLVERR;
 
    end
 end 

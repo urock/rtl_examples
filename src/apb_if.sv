@@ -61,7 +61,8 @@ interface apb_if
 
 
    task masterWriteWord( input bit [APB_ADDR_WIDTH - 1:0] addr,
-                        input bit [APB_DATA_WIDTH - 1:0] data);
+                        input bit [APB_DATA_WIDTH - 1:0] data,
+                        output bit bus_error);
       // #1ns PSEL = 1;
       PSEL = 1;
       PWRITE = 1;
@@ -76,6 +77,7 @@ interface apb_if
       while(~PREADY) begin
          @(posedge PCLK);
       end
+      bus_error = PSLVERR; 
       // $display("WRITE: addr -> %04x, data -> %x", addr, data);
       masterClear();
       if ($urandom_range(1,0)) begin
@@ -114,7 +116,8 @@ interface apb_if
    endtask : slaveReceiveTransation
 
    task masterReadWord( input  bit [APB_ADDR_WIDTH - 1:0] addr,
-                        output bit [APB_DATA_WIDTH - 1:0] data);
+                        output bit [APB_DATA_WIDTH - 1:0] data,
+                        output bit bus_error);
 
       PSEL = 1;
       PWRITE = 0;
@@ -127,6 +130,7 @@ interface apb_if
          @(posedge PCLK);
       end
       data = PRDATA; 
+      bus_error = PSLVERR; 
       // $display(" READ: addr -> %04x, data -> %x", addr, data);
       masterClear();
       if ($urandom_range(1,0)) begin
