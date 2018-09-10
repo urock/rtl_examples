@@ -1,5 +1,9 @@
 
-module apb_converter_tb;
+module apb_converter_tb
+   #(parameter
+      APB_DATAM_WIDTH_ = 64,
+      APB_DATAS_WIDTH_ = 32
+   );
 
 
 logic PCLK;
@@ -9,8 +13,6 @@ logic PRESETn;
 event reset_done_trigger;
 
 parameter APB_ADDR_WIDTH_     =     13;
-parameter APB_DATAM_WIDTH_    =     64;
-parameter APB_DATAS_WIDTH_    =     16;
 parameter APB_DATAM_NBYTES_   =     (APB_DATAM_WIDTH_/8);  
 parameter APB_DATAS_NBYTES_   =     (APB_DATAS_WIDTH_/8);  
 
@@ -107,6 +109,10 @@ initial begin
    for (p = 0; p < NUM_BYTES; p++)
       test_data[p] = $urandom_range(255,0);
 
+   $display("======================================================================");
+   $display("Running vsim with APB_DATAM_WIDTH_ -> %d, APB_DATAS_WIDTH_ -> %d ", APB_DATAM_WIDTH_, APB_DATAS_WIDTH_);
+   $display("======================================================================");
+
    
    @(reset_done_trigger);
    $display("Reset Done");
@@ -191,12 +197,6 @@ initial begin
    end
 
 end
-
-
-// checker
-
-
-
 
 
 endmodule // apb_converter_tb

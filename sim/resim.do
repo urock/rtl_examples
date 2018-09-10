@@ -1,19 +1,27 @@
-vsim -onfinish final -l vsim.log -voptargs=\"+acc\" work.apb_converter_tb
+vsim -onfinish final -l vsim.log -voptargs=\"+acc\" work.apb_converter_tb -gAPB_DATAM_WIDTH_=32 -gAPB_DATAS_WIDTH_=32
+run -all
+vsim -onfinish final -l vsim.log -voptargs=\"+acc\" work.apb_converter_tb -gAPB_DATAM_WIDTH_=32 -gAPB_DATAS_WIDTH_=16
+run -all
+vsim -onfinish final -l vsim.log -voptargs=\"+acc\" work.apb_converter_tb -gAPB_DATAM_WIDTH_=32 -gAPB_DATAS_WIDTH_=8
+run -all
+vsim -onfinish final -l vsim.log -voptargs=\"+acc\" work.apb_converter_tb -gAPB_DATAM_WIDTH_=16 -gAPB_DATAS_WIDTH_=32
+run -all
+vsim -onfinish final -l vsim.log -voptargs=\"+acc\" work.apb_converter_tb -gAPB_DATAM_WIDTH_=16 -gAPB_DATAS_WIDTH_=16
+run -all
+vsim -onfinish final -l vsim.log -voptargs=\"+acc\" work.apb_converter_tb -gAPB_DATAM_WIDTH_=16 -gAPB_DATAS_WIDTH_=8
+run -all
+vsim -onfinish final -l vsim.log -voptargs=\"+acc\" work.apb_converter_tb -gAPB_DATAM_WIDTH_=8 -gAPB_DATAS_WIDTH_=32
+run -all
+vsim -onfinish final -l vsim.log -voptargs=\"+acc\" work.apb_converter_tb -gAPB_DATAM_WIDTH_=8 -gAPB_DATAS_WIDTH_=16
+run -all
+vsim -onfinish final -l vsim.log -voptargs=\"+acc\" work.apb_converter_tb -gAPB_DATAM_WIDTH_=8 -gAPB_DATAS_WIDTH_=8
+run -all
+
 do wave.do
 view structure
 view wave
-run -all
+
 onbreak resume
-
-#-f <filename>           Read command line arguments from <filename>
-# simlibs.f
-# work.main glbl
-#    -onfinish <mode>        Customize the kernel shutdown behavior at the end of simulation
-#                            Valid modes - ask, stop, exit, final (Default: ask)
-
-#do wave.do
-#view structure
-#view wave
 
 
 
