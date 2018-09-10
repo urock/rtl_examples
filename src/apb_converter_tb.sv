@@ -9,26 +9,31 @@ logic PRESETn;
 event reset_done_trigger;
 
 parameter APB_ADDR_WIDTH_     =     13;
-parameter APB_DATA_WIDTH_     =     32;
-parameter APB_DATA_NBYTES_    =     (APB_DATA_WIDTH_/8);  
+parameter APB_DATAM_WIDTH_    =     64;
+parameter APB_DATAS_WIDTH_    =     16;
+parameter APB_DATAM_NBYTES_   =     (APB_DATAM_WIDTH_/8);  
+parameter APB_DATAS_NBYTES_   =     (APB_DATAS_WIDTH_/8);  
 
 parameter NUM_BYTES           =     256; 
 
-typedef logic [APB_DATA_WIDTH_ - 1:0] m_data_t;
+typedef logic [APB_DATAM_WIDTH_ - 1:0] m_data_t;
 typedef logic [APB_ADDR_WIDTH_ - 1:0] m_addr_t;
+
+typedef logic [APB_DATAS_WIDTH_ - 1:0] s_data_t;
+typedef logic [APB_ADDR_WIDTH_ - 1:0] s_addr_t;
 
 
 // declare interfaces
 apb_if  #(
       .APB_ADDR_WIDTH (APB_ADDR_WIDTH_),
-      .APB_DATA_WIDTH (APB_DATA_WIDTH_)
+      .APB_DATA_WIDTH (APB_DATAM_WIDTH_)
    ) apb_in (
       PCLK, PRESETn
    );
 
 apb_if  #(
       .APB_ADDR_WIDTH (APB_ADDR_WIDTH_),
-      .APB_DATA_WIDTH (APB_DATA_WIDTH_)
+      .APB_DATA_WIDTH (APB_DATAS_WIDTH_)
    ) apb_out (
       PCLK, PRESETn
    );
@@ -54,9 +59,9 @@ end
 // dut
 apb_converter # (
       .ADDRM_WIDTH (APB_ADDR_WIDTH_),
-      .DATAM_WIDTH (APB_DATA_WIDTH_),
+      .DATAM_WIDTH (APB_DATAS_WIDTH_),
       .ADDRS_WIDTH (APB_ADDR_WIDTH_),
-      .DATAS_WIDTH (APB_DATA_WIDTH_)    
+      .DATAS_WIDTH (APB_DATAM_WIDTH_)    
    ) converter (
       apb_in,
       apb_out
@@ -64,11 +69,19 @@ apb_converter # (
 
 
 
-function automatic m_data_t get_data_with_apb_width(input int byte_addr, const ref logic [7:0] data_array[NUM_BYTES]);
+function automatic m_data_t get_data_with_apbm_width(input int byte_addr, const ref logic [7:0] data_array[NUM_BYTES]);
    m_data_t data_word;
+   for (int i = 0; i < APB_DATAM_NBYTES_; i++) begin
+      data_word[APB_DATAM_WIDTH_ - 1 - 8*i -: 8] = data_array[byte_addr + i];
+   end
 
-   for (int i = 0; i < APB_DATA_NBYTES_; i++) begin
-      data_word[APB_DATA_WIDTH_ - 8*i -: 8] = data_array[byte_addr + i];
+   return data_word;
+endfunction 
+
+function automatic s_data_t get_data_with_apbs_width(input int byte_addr, const ref logic [7:0] data_array[NUM_BYTES]);
+   s_data_t data_word;
+   for (int i = 0; i < APB_DATAS_NBYTES_; i++) begin
+      data_word[APB_DATAS_WIDTH_ - 1 - 8*i -: 8] = data_array[byte_addr + i];
    end
 
    return data_word;
@@ -102,9 +115,13 @@ initial begin
 
    @(posedge PCLK);
 
-   for (addr = 0; addr < (NUM_BYTES - APB_DATA_NBYTES_ + 1); addr++) begin      
+   for (addr = 0; addr < (NUM_BYTES - APB_DATAM_NBYTES_ + 1); addr++) begin      
 
-      data_wr = get_data_with_apb_width(addr, test_data);
+      // addr = 4;
+
+      data_wr = get_data_with_apbm_width(addr, test_data);
+
+      // data_wr = 32'h12345678;
 
       apb_in.masterWriteWord(addr, data_wr, bus_error);
       if (bus_error) begin
@@ -144,8 +161,8 @@ end
 
 // slave memory model
 initial begin
-   m_addr_t  addr;
-   m_data_t  data;
+   s_addr_t  addr;
+   s_data_t  data;
    logic RNW; 
 
    logic [7:0] mem [NUM_BYTES]; 
@@ -156,17 +173,19 @@ initial begin
    while(1) begin
 
       apb_out.slaveReceiveTransation(RNW, addr, data);
-      if (~RNW) begin
-         // $display("Monitor recieved WRITE: addr -> %d, data -> %d", addr, data);
+      if ((addr % APB_DATAS_NBYTES_) == 0) begin
+         if (~RNW) begin
+            // $display("Monitor recieved WRITE: addr -> %d, data -> %d", addr, data);
 
-         for (i = 0; i < APB_DATA_NBYTES_; i++) begin
-            mem[addr + i] =  data[APB_DATA_WIDTH_ - 8*i -: 8];  
-         end 
+            for (i = 0; i < APB_DATAS_NBYTES_; i++) begin
+               mem[addr + i] =  data[APB_DATAS_WIDTH_ - 1  - 8*i -: 8];  
+            end 
 
-      end else begin
-         data = get_data_with_apb_width(addr, mem);       
-         apb_out.slaveSendAnswer(data);
-      end
+         end else begin
+            data = get_data_with_apbs_width(addr, mem);       
+            apb_out.slaveSendAnswer(data);
+         end
+      end // if ((addr % APB_DATAS_NBYTES_) == 0)
 
    
    end
