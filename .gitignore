@@ -2,3 +2,7 @@ sim/work
 *.wlf
 *.log
 transcript
+*.pyc
+*.vcd
+*.xml
+sim_build
