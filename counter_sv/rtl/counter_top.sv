@@ -3,7 +3,7 @@
 module counter_top
    #(parameter
       WIDTH = 4, 
-      DIV   = 100000000
+      DIV   = 125000000
    )
 (
    input  logic               clk,
@@ -13,9 +13,9 @@ module counter_top
    output logic [WIDTH-1:0]   leds
 );
 
-// input clk frequency = 100 MHz
-// that is 100 M ticks per second 
-// minimum bit length for 100M is 27 bits  
+// input clk frequency = 125 MHz
+// that is 125 M ticks per second 
+// minimum bit length for 125M is 27 bits  
 logic [26:0]   div_cnt; 
 logic          div_clr;
 
