@@ -6,3 +6,4 @@ transcript
 *.vcd
 *.xml
 sim_build
+*.jou
