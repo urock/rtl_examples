@@ -1,10 +1,9 @@
 `timescale 1ns / 10ps
 
 module counter
-   #(parameter
-      WIDTH = 4
-   )
-(
+#(parameter
+   WIDTH = 4
+)(
    input  logic               clk,
    input  logic               reset,
    input  logic               cnt_en,
@@ -12,7 +11,7 @@ module counter
    output logic [WIDTH-1:0]   cnt_val
 );
 
-always @(posedge clk) begin
+always_ff @(posedge clk) begin
    if (reset) begin
       cnt_val <= 0;
    end else begin

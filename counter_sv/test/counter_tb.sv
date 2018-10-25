@@ -10,6 +10,12 @@ logic                enable;
 logic                dir;
 logic [WIDTH-1:0]    leds;
 
+task wait_cycles(int c);
+   int i;
+   for (i = 0; i < c; i++)
+      @(posedge clk);
+endtask : wait_cycles
+
 //instantiate design under test (dut) rtl module
 counter_top #(
    .WIDTH      (WIDTH),
@@ -46,13 +52,14 @@ initial begin
    enable   <= 0;
    @(reset_done_trigger);
 
-   for (i = 0; i < 10; i++)
-      @(posedge clk);
+   wait_cycles(10);
    enable   <= 1; 
 
-   for (i = 0; i < 20; i++)
-      @(posedge clk);
+   wait_cycles(20);
    dir      <= 0; 
+   
+   wait_cycles(50);
+   enable   <= 0;
 end
 
 endmodule // counter_tb
